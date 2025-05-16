@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Energetic Pulse Simulation Advanced</title>
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(circle, #1a1a1a, black);
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+        #canvas {
+            background: black;
+            display: block;
+        }
+        .controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            background: rgba(0,0,0,0.5);
+            padding: 10px;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+        button, select {
+            padding: 10px 15px;
+            border: none;
+            color: white;
+            background-color: rgba(128, 0, 128, 0.8);
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        button:hover, select:hover {
+            background-color: rgba(200, 0, 200, 0.8);
+        }
+        .collapse-btn {
+            position: absolute;
+            top: -35px;
+            right: 0;
+            background: rgba(128, 0, 128, 0.8);
+        }
+    </style>
+</head>
+<body>
+
+<canvas id="canvas"></canvas>
+<div class="controls" id="controls">
+    <button onclick="startPulse()">Start</button>
+    <button onclick="pausePulse()">Pause</button>
+    <button onclick="speedUp()">Speed Up</button>
+    <button onclick="slowDown()">Slow Down</button>
+    <select id="autoSim" onchange="toggleAutoSim(this.value)">
+        <option value="off">Auto SIM Off</option>
+        <option value="slow">Auto SIM Slow</option>
+        <option value="medium">Auto SIM Medium</option>
+        <option value="fast">Auto SIM Fast</option>
+    </select>
+    <button onclick="toggleFullscreen()">Fullscreen</button>
+    <button class="collapse-btn" onclick="toggleControls()">Toggle Menu</button>
+</div>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+let animationId, autoSimInterval;
+let pulseSpeed = 0.02;
+let angle = 0;
+let running = false;
+
+function drawPulse() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const intensity = Math.sin(angle) * 0.5 + 0.5;
+    const maxRadius = Math.min(canvas.width, canvas.height) / 2;
+    const gradient = ctx.createRadialGradient(canvas.width / 2, canvas.height / 2, 30, canvas.width / 2, canvas.height / 2, maxRadius);
+
+    gradient.addColorStop(0, `rgba(255, 255, 255, ${intensity})`);
+    gradient.addColorStop(0.5, `rgba(128, 0, 128, ${intensity})`);
+    gradient.addColorStop(1, `rgba(0, 0, 0, 0)`);
+
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.arc(canvas.width / 2, canvas.height / 2, maxRadius, 0, Math.PI * 2);
+    ctx.fill();
+
+    angle += pulseSpeed;
+
+    if (running) animationId = requestAnimationFrame(drawPulse);
+}
+
+function startPulse() {
+    if (!running) {
+        running = true;
+        drawPulse();
+    }
+}
+
+function pausePulse() {
+    running = false;
+    cancelAnimationFrame(animationId);
+    clearInterval(autoSimInterval);
+}
+
+function speedUp() {
+    pulseSpeed += 0.01;
+}
+
+function slowDown() {
+    pulseSpeed = Math.max(0.01, pulseSpeed - 0.01);
+}
+
+function toggleAutoSim(speed) {
+    clearInterval(autoSimInterval);
+    if (speed !== 'off') {
+        const speeds = { slow: 5000, medium: 3000, fast: 1000 };
+        autoSimInterval = setInterval(speedUp, speeds[speed]);
+    }
+}
+
+function toggleControls() {
+    const controls = document.getElementById('controls');
+    controls.style.bottom = controls.style.bottom === '-100px' ? '20px' : '-100px';
+}
+
+function toggleFullscreen() {
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen();
+    } else if (document.exitFullscreen) {
+        document.exitFullscreen();
+    }
+}
+
+window.addEventListener('resize', () => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+});
+
+startPulse();
+</script>
+
+</body>
+</html>
