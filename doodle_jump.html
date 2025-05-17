@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Doodle Jump</title>
+<style>
+    body {
+        margin: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: #d0e7ff;
+        font-family: Arial, sans-serif;
+        height: 100vh;
+        position: relative;
+        color: #000;
+    }
+
+    body.dark {
+        background: #111;
+        color: #fff;
+    }
+
+    canvas {
+        background: #ffffff;
+        border: 1px solid #000;
+    }
+
+    body.dark canvas {
+        background: #333;
+        border-color: #fff;
+    }
+
+    #controls {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+    }
+
+    button {
+        margin-left: 4px;
+        padding: 4px 8px;
+    }
+</style>
+</head>
+<body>
+<div id="controls">
+    <button id="modeBtn">Dark Mode</button>
+    <button id="restartBtn" style="display:none;">Restart</button>
+</div>
+<canvas id="game" width="400" height="600"></canvas>
+<script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const width = canvas.width;
+const height = canvas.height;
+
+const doodler = { x: width / 2 - 20, y: height - 60, width: 40, height: 40, vx: 0, vy: 0 };
+const gravity = 0.2;
+const jumpStrength = -10;
+let scrollY = 0;
+const platforms = [];
+const platformWidth = 60;
+const platformHeight = 10;
+let gameOver = false;
+let animationId;
+
+function createInitialPlatforms() {
+    let y = height - platformHeight;
+    while (y > -height) {
+        const x = Math.random() * (width - platformWidth);
+        platforms.push({ x, y, width: platformWidth, height: platformHeight });
+        y -= 80;
+    }
+}
+
+function addPlatform(y) {
+    const x = Math.random() * (width - platformWidth);
+    platforms.push({ x, y, width: platformWidth, height: platformHeight });
+}
+
+function update() {
+    if (gameOver) return;
+    doodler.vy += gravity;
+    doodler.x += doodler.vx;
+    doodler.y += doodler.vy;
+
+    if (doodler.x < -doodler.width) doodler.x = width;
+    if (doodler.x > width) doodler.x = -doodler.width;
+
+    if (doodler.vy > 0) {
+        for (const p of platforms) {
+            if (
+                doodler.y + doodler.height > p.y &&
+                doodler.y + doodler.height < p.y + p.height &&
+                doodler.x + doodler.width > p.x &&
+                doodler.x < p.x + p.width
+            ) {
+                doodler.y = p.y - doodler.height;
+                doodler.vy = jumpStrength;
+            }
+        }
+    }
+
+    if (doodler.y < 200) {
+        const diff = 200 - doodler.y;
+        doodler.y = 200;
+        platforms.forEach(p => (p.y += diff));
+        scrollY += diff;
+    }
+
+    if (doodler.y > height) {
+        gameOver = true;
+        alert('Game Over! Score: ' + Math.floor(scrollY));
+        restartGame();
+        return;
+    }
+
+    platforms.forEach((p, idx) => {
+        if (p.y > height) platforms.splice(idx, 1);
+    });
+
+    while (platforms.length < 10) {
+        const minY = Math.min(...platforms.map(p => p.y));
+        addPlatform(minY - 80);
+    }
+}
+
+function draw() {
+    ctx.fillStyle = document.body.classList.contains('dark') ? '#222' : '#cceeff';
+    ctx.fillRect(0, 0, width, height);
+    ctx.fillStyle = '#ffb200';
+    ctx.fillRect(doodler.x, doodler.y, doodler.width, doodler.height);
+    ctx.fillStyle = '#8ED6FF';
+    platforms.forEach(p => ctx.fillRect(p.x, p.y, p.width, p.height));
+    ctx.fillStyle = document.body.classList.contains('dark') ? '#fff' : '#000';
+    ctx.fillText('Score: ' + Math.floor(scrollY), 10, 20);
+}
+
+function loop() {
+    update();
+    draw();
+    if (!gameOver) animationId = requestAnimationFrame(loop);
+}
+
+function restartGame() {
+    scrollY = 0;
+    platforms.length = 0;
+    createInitialPlatforms();
+    doodler.x = width / 2 - 20;
+    doodler.y = height - 60;
+    doodler.vx = 0;
+    doodler.vy = jumpStrength;
+    gameOver = false;
+    document.getElementById('restartBtn').style.display = 'none';
+    loop();
+}
+
+document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowLeft' || e.key === 'a') doodler.vx = -4;
+    if (e.key === 'ArrowRight' || e.key === 'd') doodler.vx = 4;
+});
+
+document.addEventListener('keyup', e => {
+    if (
+        e.key === 'ArrowLeft' ||
+        e.key === 'ArrowRight' ||
+        e.key === 'a' ||
+        e.key === 'd'
+    ) {
+        doodler.vx = 0;
+    }
+});
+
+document.getElementById('modeBtn').addEventListener('click', () => {
+    document.body.classList.toggle('dark');
+    const modeBtn = document.getElementById('modeBtn');
+    modeBtn.textContent = document.body.classList.contains('dark') ? 'Light Mode' : 'Dark Mode';
+});
+
+document.getElementById('restartBtn').addEventListener('click', restartGame);
+
+restartGame();
+</script>
+</body>
+</html>
