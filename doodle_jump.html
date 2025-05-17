@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Doodle Jump</title>
+<style>
+    body {
+        margin: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: #d0e7ff;
+        font-family: Arial, sans-serif;
+        height: 100vh;
+    }
+    canvas {
+        background: #ffffff;
+        border: 1px solid #000;
+    }
+</style>
+</head>
+<body>
+<canvas id="game" width="400" height="600"></canvas>
+<script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const width = canvas.width;
+const height = canvas.height;
+
+const doodler = { x: width / 2 - 20, y: height - 60, width: 40, height: 40, vx: 0, vy: 0 };
+const gravity = 0.2;
+const jumpStrength = -10;
+let scrollY = 0;
+const platforms = [];
+const platformWidth = 60;
+const platformHeight = 10;
+
+function createInitialPlatforms() {
+    let y = height - platformHeight;
+    while (y > -height) {
+        const x = Math.random() * (width - platformWidth);
+        platforms.push({ x, y, width: platformWidth, height: platformHeight });
+        y -= 80;
+    }
+}
+
+function addPlatform(y) {
+    const x = Math.random() * (width - platformWidth);
+    platforms.push({ x, y, width: platformWidth, height: platformHeight });
+}
+
+function update() {
+    doodler.vy += gravity;
+    doodler.x += doodler.vx;
+    doodler.y += doodler.vy;
+
+    if (doodler.x < -doodler.width) doodler.x = width;
+    if (doodler.x > width) doodler.x = -doodler.width;
+
+    if (doodler.vy > 0) {
+        for (const p of platforms) {
+            if (
+                doodler.y + doodler.height > p.y &&
+                doodler.y + doodler.height < p.y + p.height &&
+                doodler.x + doodler.width > p.x &&
+                doodler.x < p.x + p.width
+            ) {
+                doodler.y = p.y - doodler.height;
+                doodler.vy = jumpStrength;
+            }
+        }
+    }
+
+    if (doodler.y < 200) {
+        const diff = 200 - doodler.y;
+        doodler.y = 200;
+        platforms.forEach(p => (p.y += diff));
+        scrollY += diff;
+    }
+
+    if (doodler.y > height) {
+        cancelAnimationFrame(animationId);
+        alert('Game Over! Score: ' + Math.floor(scrollY));
+        document.location.reload();
+    }
+
+    platforms.forEach((p, idx) => {
+        if (p.y > height) platforms.splice(idx, 1);
+    });
+
+    while (platforms.length < 10) {
+        const minY = Math.min(...platforms.map(p => p.y));
+        addPlatform(minY - 80);
+    }
+}
+
+function draw() {
+    ctx.clearRect(0, 0, width, height);
+    ctx.fillStyle = '#ffb200';
+    ctx.fillRect(doodler.x, doodler.y, doodler.width, doodler.height);
+    ctx.fillStyle = '#8ED6FF';
+    platforms.forEach(p => ctx.fillRect(p.x, p.y, p.width, p.height));
+    ctx.fillStyle = '#000';
+    ctx.fillText('Score: ' + Math.floor(scrollY), 10, 20);
+}
+
+function loop() {
+    update();
+    draw();
+    animationId = requestAnimationFrame(loop);
+}
+
+let animationId;
+createInitialPlatforms();
+doodler.vy = jumpStrength;
+loop();
+
+document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowLeft' || e.key === 'a') doodler.vx = -4;
+    if (e.key === 'ArrowRight' || e.key === 'd') doodler.vx = 4;
+});
+
+document.addEventListener('keyup', e => {
+    if (
+        e.key === 'ArrowLeft' ||
+        e.key === 'ArrowRight' ||
+        e.key === 'a' ||
+        e.key === 'd'
+    ) {
+        doodler.vx = 0;
+    }
+});
+</script>
+</body>
+</html>
